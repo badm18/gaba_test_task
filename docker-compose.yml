@@ -1,0 +1,44 @@
+x-base:
+  &base
+  networks:
+    - gaba_net
+
+services:
+  app:
+    <<: *base
+    container_name: gaba_app
+    build: ./dev-containers/app
+    ports:
+      - "127.0.0.1:3000:3000"
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - .:/app
+
+  postgres:
+    <<: *base
+    container_name: db
+    image: postgres:18
+    restart: always
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - gaba_database:/var/lib/postgresql
+
+volumes:
+  gaba_database:
+
+networks:
+  gaba_net:
+    driver: bridge
